@@ -21,7 +21,7 @@ object Grep {
 
     val conf = new SparkConf().setAppName("Grep")
     val spark = new SparkContext(conf)
-
+    val logger = new JobPropertiesLogger(spark,"/home/abrandon/log.csv")
     var splits = 2
     val filename = args(0)
     val keyword = args(1)
@@ -29,8 +29,10 @@ object Grep {
     if (args.length > 3) splits = args(3).toInt
 
     val lines = spark.textFile(filename, splits)
+    logger.start_timer()
     val result = lines.filter(line => line.contains(keyword))
-
+    logger.stop_timer()
+    logger.write_log("Filter: Grep App")
     result.saveAsTextFile(save_file)
     println("Result has been saved to: " + save_file)
   }

@@ -19,7 +19,7 @@ object PageRank {
       System.exit(1)
     }
     var iters = args(1).toInt
-    var slices = 1
+    var slices = 2
     val save_path = args(2)
     if (args.length > 3) slices = args(3).toInt
     /*val ctx = new SparkContext(args(0), "PageRank",
@@ -27,11 +27,12 @@ object PageRank {
 
     val conf = new SparkConf().setAppName("BigDataBench PageRank")
     val ctx = new SparkContext(conf)
-
+    val logger = new JobPropertiesLogger(ctx,"/home/abrandon/log.csv")
     // load data
     val lines = ctx.textFile(args(0), slices)
 
     // directed edges: (from, (to1, to2, to3))
+    logger.start_timer()
     val links = lines.map { s =>
       val parts = s.split("\\s+")
       (parts(0), parts(1))
@@ -39,6 +40,7 @@ object PageRank {
 
     println(links.count.toString + " links loaded.")
     // rank values are initialised with 1.0
+
     var ranks = links.mapValues(v => 1.0).persist(StorageLevel.MEMORY_AND_DISK)
 
     for (i <- 1 to iters) {
@@ -53,6 +55,8 @@ object PageRank {
       ranks = contribs.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
 
     }
+    logger.stop_timer()
+    logger.write_log("Iteration: PageRank App")
 
     // show results
     //val output = ranks.collect()

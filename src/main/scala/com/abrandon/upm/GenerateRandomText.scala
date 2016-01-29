@@ -25,22 +25,22 @@ object GenerateRandomText {
   def main(args: Array[String]): Unit = {
     if ((args.length < 2) || ((args.length > 2) && (args.length < 6))){
       System.err.println(
-        s"Usage: $GenerateRandomText <Output_data_URL> <TOTAL_DATA_SIZE> " +
+        s"Usage: $GenerateRandomText <Output_data_URL> <TOTAL_DATA_SIZE> <NPARALLEL> " +
           s"[<MIN_WORDS_KEY> <MAX_WORDS_KEY> <MIN_WORDS_VALUE> <MAX_WORDS_VALUE>]"
       )
       System.exit(1)
     }
     val sparkConf = new SparkConf().setAppName("GenerateRandomText")
     val sc = new SparkContext(sparkConf)
-    val numParallel = sc.getConf.getInt("spark.default.parallelism", sc.defaultParallelism)
     val totalDataSize = args(1).toLong // val totalDataSize = 100000.toLong
+    val numParallel = args(2).toInt
 
-    if (args.length>2){
-      minWordsInKey =  args(2).toInt
-      maxWordsInKey =  args(3).toInt
-      minWordsInValue =  args(4).toInt
-      maxWordsInValue =  args(5).toInt
-    }
+/*    if (args.length>3){
+      minWordsInKey =  args(3).toInt
+      maxWordsInKey =  args(4).toInt
+      minWordsInValue =  args(5).toInt
+      maxWordsInValue =  args(6).toInt
+    }*/
     val wordsInKeyRange = maxWordsInKey - minWordsInKey
     val wordsInValueRange = maxWordsInValue - minWordsInValue
 
@@ -56,6 +56,9 @@ object GenerateRandomText {
 
     println(s"total:$totalDataSize, mean_size:$mean_size, " +
       s"numParallel:$numParallel, HDFS:" + args(0))
+
+
+
 
     val data = sc.parallelize(1L to (totalDataSize / mean_size.toLong), numParallel).map{x =>
       generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)

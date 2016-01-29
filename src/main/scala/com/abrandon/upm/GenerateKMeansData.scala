@@ -5,6 +5,7 @@ package com.abrandon.upm
  */
 
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.mllib.clustering.KMeans
 import org.apache.spark.mllib.linalg.Vectors
@@ -22,11 +23,13 @@ object GenerateKMeansData {
       System.exit(1)
     }
     val fileURL = args(0)
-    val nPoints = args(1).toInt
+    val nPoints = args(1).toLong
     val nClusters = args(2).toInt
     val nDim = args(3).toInt
     val ratio = args(4).toDouble
     val nPart = args(5).toInt
+
+    val nIters = nPoints / Int.MaxValue // We have to add this for Int too big Errors
 
     /*
 
@@ -39,14 +42,32 @@ object GenerateKMeansData {
 
      */
 
-
     val conf = new SparkConf().setAppName("KMeansDataGenerator")
     val sc = new SparkContext(conf)
-    val points = KMeansDataGenerator.generateKMeansRDD(sc, nPoints, nClusters,nDim,ratio,nPart) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
-    val data = points.map(x => Vectors.dense(x)).cache()
-    val dataString = data.map(l => l.toString)
-    dataString.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+    if (nIters == 0) {
+      val points = KMeansDataGenerator.generateKMeansRDD(sc, nPoints.toInt, nClusters,nDim,ratio,nPart) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      val data = points.map(x => Vectors.dense(x)).cache()
+      val dataString = data.map(l => l.toString)
+      dataString.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+    }
+    else{
+      val points = KMeansDataGenerator.generateKMeansRDD(sc, Int.MaxValue, nClusters,nDim,ratio,nPart) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      var data = points.map(x => Vectors.dense(x))
+        for (i <- 2 to nIters.toInt) {
+          val points = KMeansDataGenerator.generateKMeansRDD(sc, Int.MaxValue, nClusters, nDim, ratio, nPart)
+          data = data.union(points.map(x => Vectors.dense(x)))
+        }
+      val dataString = data.map(l => l.toString)
+      dataString.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+    }
+
     sc.stop()
-  }
+
+    //
+    //    res.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+    //    sc.stop()
+
+    }
+
 
 }

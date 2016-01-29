@@ -24,6 +24,8 @@ object KMeansBench {
     var splits = 2
     val conf = new SparkConf().setAppName("KMeans")
     val sc = new SparkContext(conf)
+    val logger = new JobPropertiesLogger(sc,"/home/abrandon/log.csv")
+
 
     val filename = args(0)
     val k = args(1).toInt
@@ -42,7 +44,10 @@ object KMeansBench {
 
     val trainData = parsedData.map(s => Vectors.dense(s))
 
+    logger.start_timer()
     val clusters = MLLibKMeans.train(trainData, k, iterations)
+    logger.stop_timer()
+    logger.write_log("Training Model: KMeans App")
     //val clusters = org.apache.spark.mllib.clustering.KMeans.train(parsedData, k, iterations)
 
     // Evaluate clustering by computing Within Set Sum of Squared Errors
