@@ -36,32 +36,57 @@ object GenerateSVMData {
     val globalRnd = new Random(94720)
     val trueWeights = Array.fill[Double](nfeatures + 1)(globalRnd.nextGaussian())
 
-    var nIters = nexamples / Int.MaxValue
+    val nIters = nexamples / Int.MaxValue
 
-    if (nIters == 0) nIters = 1
 
-    val data: RDD[String] = sc.parallelize(0L until Int.MaxValue - 1, parts).map { idx =>
-      var res = new String("")
-      for (i <- 1 to nIters.toInt) {
-        val rnd = new Random(42 + idx + i)
-        val x = Array.fill[Double](nfeatures) {
-          rnd.nextDouble() * 2.0 - 1.0
-        }
-
-        val yD = rnd.nextGaussian() * 0.1
-        val y = if (yD < 0) 0 else 1
-
-        val lPoint = LabeledPoint(y, Vectors.dense(x))
-        res = res + lPoint.toString()
-        if (i != nIters.toInt) res = res + "\n"
+    def generate_point(idx:Int,nfeatures:Int):String ={
+      val rnd = new Random(42 + idx)
+      val x = Array.fill[Double](nfeatures) {
+        rnd.nextDouble() * 2.0 - 1.0
       }
-      res
+
+      val yD = rnd.nextGaussian() * 0.1
+      val y = if (yD < 0) 0 else 1
+
+      val lPoint = LabeledPoint(y, Vectors.dense(x))
+      return(lPoint.toString())
     }
 
-    data.coalesce(1,shuffle = true).saveAsTextFile(outputPath)
+    if (nIters == 0) {
+      val data = sc.parallelize(1 to nexamples.toInt,parts).map(x => generate_point(x,nfeatures)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      data.coalesce(1,shuffle = true).saveAsTextFile(outputPath)
+    }
+    else{
+      val excess = nexamples - (Int.MaxValue.toLong * nIters)
+      var data = sc.parallelize(1 to excess.toInt,parts).map(x => generate_point(x,nfeatures)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      for (i <- 2 to nIters.toInt) {
+        val data2 = sc.parallelize(1 to Int.MaxValue - 1).map(x => generate_point(x,nfeatures))
+        data = data.union(data2)
+      }
+      data.coalesce(1,shuffle = true).saveAsTextFile(outputPath)
+    }
+
+    /*    val data: RDD[String] = sc.parallelize(0L until Int.MaxValue - 1, parts).map { idx =>
+          var res = new String("")
+            val rnd = new Random(42 + idx + i)
+            val x = Array.fill[Double](nfeatures) {
+              rnd.nextDouble() * 2.0 - 1.0
+            }
+
+            val yD = rnd.nextGaussian() * 0.1
+            val y = if (yD < 0) 0 else 1
+
+            val lPoint = LabeledPoint(y, Vectors.dense(x))
+            res = res + lPoint.toString()
+            if (i != nIters.toInt) res = res + "\n"
+          }
+          res
+        }
+
+        data.coalesce(1,shuffle = true).saveAsTextFile(outputPath)*/
 
 
-    //sc.stop()
+    sc.stop()
   }
 
 }

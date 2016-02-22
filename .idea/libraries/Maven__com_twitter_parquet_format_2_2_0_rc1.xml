@@ -3,7 +3,9 @@
     <CLASSES>
       <root url="jar://$MAVEN_REPOSITORY$/com/twitter/parquet-format/2.2.0-rc1/parquet-format-2.2.0-rc1.jar!/" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/twitter/parquet-format/2.2.0-rc1/parquet-format-2.2.0-rc1-javadoc.jar!/" />
+    </JAVADOC>
     <SOURCES>
       <root url="jar://$MAVEN_REPOSITORY$/com/twitter/parquet-format/2.2.0-rc1/parquet-format-2.2.0-rc1-sources.jar!/" />
     </SOURCES>
