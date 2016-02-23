@@ -58,9 +58,25 @@ object GenerateRandomText {
       s"numParallel:$numParallel, HDFS:" + args(0))
 
     // TODO. WE HAVE TO PARTITION THE DATA AND MAKE A UNION OF IT
+    val nLines = (totalDataSize / mean_size.toLong)
 
-    val nIters =
+    val nIters =  nLines / Int.MaxValue
 
+    if (nIters == 0) {
+      val data = sc.parallelize(1L to nLines,numParallel).map(x =>
+        generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      data.coalesce(1,shuffle = true).saveAsTextFile(args(0))
+    }
+    else{
+      val excess = nLines - (Int.MaxValue.toLong * nIters)
+      var data = sc.parallelize(1 to excess.toInt,numParallel).map(x => generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
+      for (i <- 2 to nIters.toInt) {
+        val data2 = sc.parallelize(1 to Int.MaxValue - 1).map(x =>
+          generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue))
+        data = data.union(data2)
+      }
+      data.coalesce(1,shuffle = true).saveAsTextFile(args(0))
+    }
 
     val data = sc.parallelize(1L to (totalDataSize / mean_size.toLong), numParallel).map{x =>
       generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)
