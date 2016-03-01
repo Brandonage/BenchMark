@@ -32,11 +32,11 @@ object GenerateRandomText {
       )
       System.exit(1)
     }
+
     val sparkConf = new SparkConf().setAppName("GenerateRandomText")
     val sc = new SparkContext(sparkConf)
     val totalDataSize = args(1).toLong // val totalDataSize = 100000.toLong
     val numParallel = args(2).toInt
-
     /*    if (args.length>3){
           minWordsInKey =  args(3).toInt
           maxWordsInKey =  args(4).toInt
@@ -57,7 +57,6 @@ object GenerateRandomText {
     println(s"total:$totalDataSize, mean_size:$mean_size, " +
       s"numParallel:$numParallel, HDFS:" + args(0))
 
-    // TODO. WE HAVE TO PARTITION THE DATA AND MAKE A UNION OF IT
     val nLines = (totalDataSize / mean_size.toLong)
 
     val nIters =  nLines / Int.MaxValue
@@ -65,24 +64,24 @@ object GenerateRandomText {
     if (nIters == 0) {
       val data = sc.parallelize(1L to nLines,numParallel).map(x =>
         generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
-      data.coalesce(1,shuffle = true).saveAsTextFile(args(0))
+      data.saveAsTextFile(args(0))
     }
     else{
       val excess = nLines - (Int.MaxValue.toLong * nIters)
       var data = sc.parallelize(1 to excess.toInt,numParallel).map(x => generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
-      for (i <- 2 to nIters.toInt) {
+      for (i <- 1 to nIters.toInt) {
         val data2 = sc.parallelize(1 to Int.MaxValue - 1).map(x =>
           generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue))
         data = data.union(data2)
       }
-      data.coalesce(1,shuffle = true).saveAsTextFile(args(0))
+      data.saveAsTextFile(args(0))
     }
 
     val data = sc.parallelize(1L to (totalDataSize / mean_size.toLong), numParallel).map{x =>
       generateSentence(minWordsInKey) + " " + generateSentence(minWordsInValue)
     }
 
-    data.coalesce(1,shuffle=true).saveAsTextFile(args(0))  //
+    data.saveAsTextFile(args(0))  //
     sc.stop()
   }
 

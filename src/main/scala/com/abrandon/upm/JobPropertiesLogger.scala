@@ -28,9 +28,24 @@ class JobPropertiesLogger(sc:SparkContext,fileName:String) {
     val pairs = sc.getConf.getAll.toMap
     val fw = new FileWriter(fileName,true)
     try{
-      fw.write(message + ";" + final_time() + ";" + pairs.getOrElse("spark.memory.storageFraction","0.5") + ";" +
-        pairs.getOrElse("spark.shuffle.spill.compress","true") + ";" + pairs.getOrElse("spark.io.compression.codec","snappy") +
-        ";" + pairs.getOrElse("spark.executor.memory","1g") + ";\n")
+      val exMemStr = pairs.getOrElse("spark.executor.memory","1g")
+      val exMem = exMemStr.take(exMemStr.length -1 ).toInt
+      var drMemStr = pairs.getOrElse("spark.driver.memory","1g")
+      val drMem = drMemStr.take(drMemStr.length -1 ).toInt
+      var defaultYarnExecOverhead = exMem * 0.10
+      if (defaultYarnExecOverhead < 384) defaultYarnExecOverhead = 384
+      var defaultYarnDrivOverhead = exMem * 0.10
+      if (defaultYarnDrivOverhead < 384) defaultYarnExecOverhead = 384
+
+      fw.write(message + ";" + sc.applicationId + ";" + final_time() + ";" + pairs.getOrElse("spark.driver.cores","1") +
+        ";" + pairs.getOrElse("spark.executor.cores","1") + ";" +  pairs.getOrElse("spark.yarn.executor.memoryOverhead",defaultYarnExecOverhead.toString) +
+        ";" + pairs.getOrElse("spark.yarn.driver.memoryOverhead",defaultYarnDrivOverhead.toString) + ";" + pairs.getOrElse("spark.executor.memory","1g") +
+        ";" + pairs.getOrElse("spark.driver.memory","1g") + ";" + pairs.getOrElse("spark.reducer.maxSizeInFlight","48m") +
+        ";" + pairs.getOrElse("spark.shuffle.compress","true")  + ";" + pairs.getOrElse("spark.shuffle.file.buffer","32k") +
+        ";" + pairs.getOrElse("spark.shuffle.manager","sort") + ";" + pairs.getOrElse("spark.shuffle.spill.compress","true") +
+        ";" + pairs.getOrElse("spark.io.compression.codec","snappy") + ";" +  pairs.getOrElse("spark.memory.fraction","0,75") +
+        ";" + pairs.getOrElse("spark.memory.storageFraction","0,5") + ";" + pairs.getOrElse("spark.default.parallelism",sc.defaultParallelism.toString) +
+        ";" + pairs.getOrElse("spark.executor.heartbeatInterval","10s") + ";" + pairs.getOrElse("spark.task.cpus","1") + "\n")
     }
 
     finally fw.close()

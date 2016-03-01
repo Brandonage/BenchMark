@@ -48,17 +48,17 @@ object GenerateKMeansData {
       val points = KMeansDataGenerator.generateKMeansRDD(sc, nPoints.toInt, nClusters,nDim,ratio,nPart) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
       val data = points.map(x => Vectors.dense(x)).cache()
       val dataString = data.map(l => l.toString)
-      dataString.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+      dataString.saveAsTextFile(fileURL)
     }
     else{
       val points = KMeansDataGenerator.generateKMeansRDD(sc, Int.MaxValue, nClusters,nDim,ratio,nPart) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
       var data = points.map(x => Vectors.dense(x))
-      for (i <- 2 to nIters.toInt) {
+      for (i <- 1 to nIters.toInt) {
         val points = KMeansDataGenerator.generateKMeansRDD(sc, Int.MaxValue, nClusters, nDim, ratio, nPart)
         data = data.union(points.map(x => Vectors.dense(x)))
       }
       val dataString = data.map(l => l.toString)
-      dataString.coalesce(1,shuffle = true).saveAsTextFile(fileURL)
+      dataString.saveAsTextFile(fileURL)
     }
 
     sc.stop()

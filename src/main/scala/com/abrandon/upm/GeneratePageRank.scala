@@ -53,16 +53,16 @@ object GeneratePageRank {
 
     if (nIters == 0) {
       val data = sc.parallelize(1L to nEdges.toInt,parts).map(x => generateEdge()) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
-      data.coalesce(1,shuffle = true).saveAsTextFile(save_path)
+      data.saveAsTextFile(save_path)
     }
     else{
       val excess = nEdges - (Int.MaxValue.toLong * nIters)
       var data = sc.parallelize(1L to excess.toInt,parts).map(x => generateEdge()) //generateKMeansRDD(SparkContext sc, int numPoints, int k, int d, double r, int numPartitions)
-      for (i <- 2 to nIters.toInt) {
+      for (i <- 1 to nIters.toInt) {
         val data2 = sc.parallelize(1L to Int.MaxValue - 1).map(x => generateEdge())
         data = data.union(data2)
       }
-      data.coalesce(1,shuffle = true).saveAsTextFile(save_path)
+      data.saveAsTextFile(save_path)
     }
 
 
